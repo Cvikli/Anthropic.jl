@@ -45,15 +45,29 @@ println(response.content)
 ```
 
 ## TODO
-[x] image support
-[x] Token, cost and ellapsed time should be also noted
-[x] type ERROR in the streaming should be handled more comprehensively... 
-[ ] Cancel request works on the web... (maybe it is only working for completion API?)
-- Implement response cancellation functionality. Canceling a query should be possible somehow! Do we have "stop" API? example: https://api.claude.ai/api/organizations/d9192fb1-1546-491e-89f2-d3432c9695d2/chat_conversations/f2f779eb-49c5-4605-b8a5-009cdb88fe20/stop_response
 
-Other case:
-Chat_conversation id: https://api.claude.ai/api/organizations/d9192fb1-1546-491e-89f2-d3432c9695d2/chat_conversations 
-response: {
+- [x] Image support
+- [x] Token, cost and elapsed time should be also noted
+- [x] Type ERROR in the streaming should be handled more comprehensively...
+- [ ] Cancel request works on the web... (maybe it is only working for completion API?)
+
+### Response Cancellation Implementation
+Implement response cancellation functionality. Canceling a query should be possible somehow! 
+
+**Stop API Example:**
+```
+https://api.claude.ai/api/organizations/d9192fb1-1546-491e-89f2-d3432c9695d2/chat_conversations/f2f779eb-49c5-4605-b8a5-009cdb88fe20/stop_response
+```
+
+### Other Case
+**Chat Conversation ID:**
+```
+https://api.claude.ai/api/organizations/d9192fb1-1546-491e-89f2-d3432c9695d2/chat_conversations
+```
+
+**Response:**
+```json
+{
     "uuid": "500aece9-8e42-498e-a035-5840e25f8864",
     "name": "",
     "summary": "",
@@ -69,9 +83,14 @@ response: {
     "project_uuid": null,
     "current_leaf_message_uuid": null
 }
-Stop request
- https://api.claude.ai/api/organizations/d9192fb1-1546-491e-89f2-d3432c9695d2/chat_conversations/c05a216d-952c-4fb4-8797-c6442a3a13af/stop_response
+```
 
+**Stop Request:**
+```
+https://api.claude.ai/api/organizations/d9192fb1-1546-491e-89f2-d3432c9695d2/chat_conversations/c05a216d-952c-4fb4-8797-c6442a3a13af/stop_response
+```
+
+### Future Improvements
 - Add support for more Anthropic API features
 
 ## Contributing
