@@ -44,8 +44,43 @@ response = ai_ask_safe("What's the capital of France?")
 println(response.content)
 ```
 
+## Comprehensive example (Streaming)
+
+Please see file [LLM_solve.jl](https://github.com/Sixzero/EasyContext.jl/blob/master/src/transform/LLM_solve.jl): 
+So something like:
+```julia
+include("syntax_highlight.jl")
+
+function LLM_solve(conv, cache; model::String="claude-3-5-sonnet-20241022", on_meta_usr=noop, on_text=noop, on_meta_ai=noop, on_error=noop, on_done=noop, on_start=noop)
+    channel = ai_stream(conv, model=model, printout=false, cache=cache)
+    highlight_state = SyntaxHighlightState()
+
+    try
+        process_stream(channel; 
+                on_text     = text -> (on_text(text); handle_text(highlight_state, text)),
+                on_meta_usr = meta -> (flush_highlight(highlight_state); on_meta_usr(meta); print_user_message(meta)),
+                on_meta_ai  = (meta, full_msg) -> (flush_highlight(highlight_state); on_meta_ai(create_AI_message(full_msg, meta)); print_ai_message(meta)),
+                on_error,
+                on_done     = () -> (flush_highlight(highlight_state); on_done()),
+                on_start)
+    catch e
+        e isa InterruptException && rethrow(e)
+        @error "Error executing code block: $(sprint(showerror, e))" exception=(e, catch_backtrace())
+        on_error(e)
+        return e
+    end
+end
+
+# Helper functions
+flush_highlight(state) = process_buffer(state, flush=true)
+print_user_message(meta) = println("\e[32mUser message: \e[0m$(Anthropic.format_meta_info(meta))\n\e[36m¬ \e[0m")
+print_ai_message(meta) = println("\n\e[32mAI message: \e[0m$(Anthropic.format_meta_info(meta))")
+```
+This write out close to every data for you (text/prices/tokens/caching).   
+
 ## TODO
 
+- [x] Caching support
 - [x] Image support
 - [x] Token, cost and elapsed time should be also noted
 - [x] Type ERROR in the streaming should be handled more comprehensively...
@@ -57,6 +92,7 @@ Implement response cancellation functionality. Canceling a query should be possi
 **Stop API Example:**
 ```
 https://api.claude.ai/api/organizations/d9192fb1-1546-491e-89f2-d3432c9695d2/chat_conversations/f2f779eb-49c5-4605-b8a5-009cdb88fe20/stop_response
+https://api.claude.ai/api/organizations/d9192fb1-1546-491e-89f2-d3432c9695d2/chat_conversations/c05a216d-952c-4fb4-8797-c6442a3a13af/stop_response
 ```
 
 ### Other Case
@@ -83,11 +119,6 @@ https://api.claude.ai/api/organizations/d9192fb1-1546-491e-89f2-d3432c9695d2/cha
     "project_uuid": null,
     "current_leaf_message_uuid": null
 }
-```
-
-**Stop Request:**
-```
-https://api.claude.ai/api/organizations/d9192fb1-1546-491e-89f2-d3432c9695d2/chat_conversations/c05a216d-952c-4fb4-8797-c6442a3a13af/stop_response
 ```
 
 ### Future Improvements
