@@ -58,14 +58,15 @@ function anthropic_extra_headers(; has_tools = false, has_cache = false, max_tok
     return extra_headers
 end
 
-function stream_response(prompt::String; system_msg="", model::String="claude-3-5-sonnet-20240620", max_tokens::Int=DEFAULT_MAX_TOKEN, printout=true, verbose=false, cache::Union{Nothing,Symbol}=nothing) 
-    return stream_response([Dict("role" => "user", "content" => prompt)]; system_msg, model, max_tokens, printout, verbose, cache)
+function stream_response(prompt::String; system_msg="", model::String="claude-3-5-sonnet-20240620", max_tokens::Int=DEFAULT_MAX_TOKEN, printout=true, verbose=false, cache::Union{Nothing,Symbol}=nothing, top_p=nothing) 
+    return stream_response([Dict("role" => "user", "content" => prompt)]; system_msg, model, max_tokens, printout, verbose, cache, top_p)
 end
+
 function is_sonnet(model)
     model ∈ Set(("claude-3-5-sonnet-20241022", "claude-3-5-sonnet-20240620", "claude-3-5-sonnet-latest"))
 end
 
-function stream_response(msgs::Vector{Dict{String,T}}; system_msg="", model::String="claude-3-5-sonnet-20240620", max_tokens::Int=DEFAULT_MAX_TOKEN, printout=true, verbose=false, cache::Union{Nothing,Symbol}=nothing) where {T}
+function stream_response(msgs::Vector{Dict{String,T}}; system_msg="", model::String="claude-3-5-sonnet-20240620", max_tokens::Int=DEFAULT_MAX_TOKEN, printout=true, verbose=false, cache::Union{Nothing,Symbol}=nothing, top_p=nothing) where {T}
     processed_msgs = []
     for msg in msgs
         if msg["role"] == "user" && msg["content"] isa Vector
@@ -86,7 +87,8 @@ function stream_response(msgs::Vector{Dict{String,T}}; system_msg="", model::Str
     end
     
     body = Dict("messages" => convert_user_messages(msgs), "model" => model, "max_tokens" => max_tokens, "stream" => true)
-    @assert is_valid_message_sequence(body["messages"]) "Invalid message sequence. Messages should alternate between 'user' and 'assistant', starting with 'user'. $(msgs[2:end])"
+    !isnothing(top_p) && (body["top_p"] = top_p)
+    @assert is_valid_message_sequence(body["messages"]) "Invalid message sequence. Messages should alternate between 'user' and 'assistant', starting with 'user'. "
     
     !isempty(system_msg) && (body["system"] = system_msg)
     
@@ -174,8 +176,8 @@ function stream_response(msgs::Vector{Dict{String,T}}; system_msg="", model::Str
     return channel
 end
 
-function ai_stream_safe(msgs; model, max_tokens=DEFAULT_MAX_TOKEN, printout=true, system_msg="", cache=nothing) 
-    return stream_response(msgs; system_msg, model, max_tokens, printout, cache)
+function ai_stream_safe(msgs; model, max_tokens=DEFAULT_MAX_TOKEN, printout=true, system_msg="", cache=nothing, top_p=nothing) 
+    return stream_response(msgs; system_msg, model, max_tokens, printout, cache, top_p)
 end
 
 function ai_ask_safe(conversation::Vector{Dict{String,String}}; model, return_all=false, max_token=DEFAULT_MAX_TOKEN, cache=nothing)     
