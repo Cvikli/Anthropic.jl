@@ -107,9 +107,9 @@ function stream_response(msgs::Vector{Dict{String,T}}; system_msg="", model::Str
     
     # Apply cache control if specified
     if !isnothing(cache)
-        # Apply cache control to all messages if cache is :last or :all
-        if cache == :last || cache == :all
-            for msg in body["messages"][max(end-2, 1):end]
+        # Apply cache control to all messages if cache is :all_but_last or :all
+        if cache == :all_but_last || cache == :all
+            for msg in body["messages"][max(end-2, 1):max(end - (cache == :all_but_last), 1)]
                 if msg["role"] == "user" && !isempty(msg["content"])
                     msg["content"][end]["cache_control"] = Dict("type" => "ephemeral")
                 end
