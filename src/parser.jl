@@ -125,6 +125,12 @@ function process_stream(channel::Channel;
             elseif type == :ping
                 on_ping(content)
             elseif type == :error
+                err = get(content, "error", nothing)
+                if isnothing(err)
+                    @warn content
+                else
+                    @warn err
+                end
                 on_error(content)
             elseif type == :done
                 on_done()
