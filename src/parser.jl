@@ -17,11 +17,14 @@ end
 
 function parse_message_delta(data, model)
     usage = get(data, "usage", Dict())
+    delta = get(data, "delta", Dict())
     data = Dict{String,Any}(
         "input_tokens"  => get(usage, "input_tokens",  0),
         "output_tokens" => get(usage, "output_tokens", 0),
         "cache_creation_input_tokens" => get(usage, "cache_creation_input_tokens", 0),
-        "cache_read_input_tokens"     => get(usage, "cache_read_input_tokens",     0)
+        "cache_read_input_tokens"     => get(usage, "cache_read_input_tokens",     0),
+        "stop_reason"   => get(delta, "stop_reason", ""),
+        "stop_sequence" => get(delta, "stop_sequence", "")
     )
     data["price"] = append_calculated_cost(data, model)
     return data
@@ -37,23 +40,20 @@ function parse_error(data)
 end
 
 function parse_stream_data(raw_data::String)
-    events = []
-    if raw_data == "data: [DONE]\n\n"
-        @show raw_data
-        println("This just shouldn't exist in anthropic as it wasn't there and I got error and had to swithc to 'message_stop' event!!")
-        return events
-    end
+    # Handle special cases
+    raw_data == "data: [DONE]\n\n" && return [(:done, nothing)]
+    raw_data == "\n" && return []
+    startswith(raw_data, "event: ") && return [(:meta, nothing)]
 
     data = try
         JSON.parse(raw_data)
     catch e
-        # @warn "Failed to parse JSON: $raw_data" exception=(e, catch_backtrace())
-        # push!(events, (:error, "Failed to parse JSON: $raw_data"))
-        return events
+        # @warn "Failed to parse JSON: $(raw_data)" exception=(e, catch_backtrace())
+        return [(:error, Dict("type" => "parse_error", "message" => "Failed to parse JSON: \n$raw_data", "details" => string(e)))]
     end
 
     model = get(data, "model", "unknown")
-
+    events = []
     if haskey(data, "type")
         if data["type"] == "message_start"
             push!(events, (:meta_usr, parse_message_start(data, model)))
@@ -114,14 +114,12 @@ function process_stream(channel::Channel;
                 on_text(content)
             elseif type == :meta_usr
                 start_time_usr = time()
-                user_meta = content
-                user_meta["elapsed"] = start_time_usr - start_time
-                on_meta_usr(user_meta)
+                content["elapsed"] = start_time_usr - start_time
+                on_meta_usr(content)
             elseif type == :meta_ai
                 start_time_ai = time()
-                ai_meta = content
-                ai_meta["elapsed"] = start_time_ai - start_time_usr
-                on_meta_ai(ai_meta, full_response)
+                content["elapsed"] = start_time_ai - start_time_usr
+                on_meta_ai(content, full_response)
             elseif type == :ping
                 on_ping(content)
             elseif type == :error
