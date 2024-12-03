@@ -153,11 +153,10 @@ function stream_response(msgs::Vector{Dict{String,T}}; system_msg="", model::Str
                             data["model"] = model
                             put!(channel, JSON.json(data))
                             printout && verbose && println(JSON.json(data))
-                        catch e
+                        catch e # I THINK WE DON'T HANDLE THIS CORRECTLY!!!! somehow the first message can be unparseable and we lose that data??? What the...
                             # If it's not valid JSON, it's probably incomplete
                             # Put it back in the buffer and wait for more data
-                            seekstart(buffer)
-                            write(buffer, line)
+                            seek(buffer, position(buffer) - length(line))  # Move position back by line length
                             break
                         end
                     else

@@ -40,16 +40,17 @@ function parse_error(data)
 end
 
 function parse_stream_data(raw_data::String)
+    # @show raw_data
     # Handle special cases
     raw_data == "data: [DONE]\n\n" && return [(:done, nothing)]
     raw_data == "\n" && return []
     startswith(raw_data, "event: ") && return [(:meta, nothing)]
-
+ 
     data = try
         JSON.parse(raw_data)
     catch e
-        # @warn "Failed to parse JSON: $(raw_data)" exception=(e, catch_backtrace())
-        return [(:error, Dict("type" => "parse_error", "message" => "Failed to parse JSON: \n$raw_data", "details" => string(e)))]
+        return [(:error, Dict("type"=>"json_error", "message"=>"Failed to parse JSON: $raw_data"))]  # we throw this data away
+        # return [(:partial, raw_data)]  # If JSON parsing fails, assume partial data
     end
 
     model = get(data, "model", "unknown")
@@ -107,9 +108,17 @@ function process_stream(channel::Channel;
     
     full_response = ""
     
+    buffer = ""
     for chunk in channel
+        if !isempty(buffer)
+            chunk = buffer * chunk
+            buffer = ""
+        end
+
         for (type, content) in parse_stream_data(chunk)
-            if type == :text
+            if type == :partial
+                buffer = content  # Store partial data for next iteration. Sadly this can cause unparseable data to be sent back if some really unparseable garbage arrives...
+            elseif type == :text
                 full_response *= content
                 on_text(content)
             elseif type == :meta_usr
