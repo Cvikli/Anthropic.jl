@@ -24,8 +24,8 @@ function parse_message_delta(data, model)
         "cache_creation_input_tokens" => get(usage, "cache_creation_input_tokens", 0),
         "cache_read_input_tokens"     => get(usage, "cache_read_input_tokens",     0),
         "stop_reason"   => get(delta, "stop_reason", ""),
-        "stop_sequence" => get(delta, "stop_sequence", "")
-    )
+        )
+    data["stop_sequence"] = delta["stop_reason"] == "stop_sequence" ? delta["stop_sequence"] : "" 
     data["price"] = append_calculated_cost(data, model)
     return data
 end
