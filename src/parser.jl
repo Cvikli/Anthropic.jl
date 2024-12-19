@@ -18,6 +18,7 @@ end
 function parse_message_delta(data, model)
     usage = get(data, "usage", Dict())
     delta = get(data, "delta", Dict())
+    stop_reason = get(delta, "stop_reason", "")
     data = Dict{String,Any}(
         "input_tokens"  => get(usage, "input_tokens",  0),
         "output_tokens" => get(usage, "output_tokens", 0),
