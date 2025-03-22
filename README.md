@@ -1,6 +1,7 @@
 ## Anthropic.jl
 
 Anthropic.jl is a Julia package that provides a simple interface to interact with Anthropic's AI models, particularly Claude. 
+
 Now it will become deprecared as [PromptingTools.jl](https://github.com/svilupp/PromptingTools.jl) also support streaming. But of course it is lot more complicated than this project, so hopefully some day we will also simplify the PromptingTools.jl as time goes. ;)
 
 ## Features
