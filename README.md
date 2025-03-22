@@ -31,7 +31,7 @@ using Anthropic:process_stream
 full_response, message_meta = process_stream(channel)
 
 # Stream a response called with protection.
-response_channel = ai_stream_safe("Tell me a joke")
+response_channel = ai_stream_safe("Tell me a joke", model="claude-3-opus-20240229")
 response_channel = ai_stream_safe([Dict("role" => "user", "content" => "Tell me a joke")], model="claude-3-opus-20240229", max_tokens=100)
 
 
@@ -40,7 +40,7 @@ for chunk in response_channel
 end
 
 # Or use the non-streaming version which is a wrapper of the ai_generate from promptingtools.
-response = ai_ask_safe("What's the capital of France?")
+response = ai_ask_safe("What's the capital of France?", model="claude-3-opus-20240229")
 println(response.content)
 ```
 
